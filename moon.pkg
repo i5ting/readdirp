@@ -4,5 +4,8 @@ import {
 
 options(
   native_stub: [ "fs_native.c" ],
-  targets: { "fs_native.mbt": [ "native", "llvm" ] },
+  targets: {
+    "fs_native.mbt": [ "native", "llvm" ],
+    "fs_native_wbtest.mbt": [ "native", "llvm" ],
+  },
 )

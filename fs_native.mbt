@@ -3,10 +3,6 @@
 priv type NativeNames
 
 ///|
-#external
-priv type NativeStat
-
-///|
 #borrow(path)
 extern "C" fn native_read_dir_all(path : Bytes) -> NativeNames = "readdirp_read_dir_all"
 
@@ -18,19 +14,13 @@ fn native_names_to_fixed_array(names : NativeNames) -> FixedArray[Bytes] = "%ide
 
 ///|
 #borrow(path)
-extern "C" fn native_stat_path(
-  path : Bytes,
-  follow_symlink : Int,
-) -> NativeStat = "readdirp_stat_path"
+extern "C" fn native_stat_path(path : Bytes, follow_symlink : Int) -> Int = "readdirp_stat_path"
 
 ///|
-extern "C" fn native_stat_is_null(stat : NativeStat) -> Int = "readdirp_stat_is_null"
+extern "C" fn native_stat_size() -> Int64 = "readdirp_stat_size"
 
 ///|
-extern "C" fn native_stat_size(stat : NativeStat) -> Int64 = "readdirp_stat_size"
-
-///|
-extern "C" fn native_stat_mode(stat : NativeStat) -> Int = "readdirp_stat_mode"
+extern "C" fn native_stat_mode() -> Int = "readdirp_stat_mode"
 
 ///|
 extern "C" fn native_last_error_message() -> Bytes = "readdirp_last_error_message"
@@ -71,10 +61,8 @@ fn stat_path(
       0
     },
   )
-  guard native_stat_is_null(stat) == 0 else {
-    raise ReaddirpError(last_error_message())
-  }
-  { size: native_stat_size(stat), mode: native_stat_mode(stat) }
+  guard stat == 0 else { raise ReaddirpError(last_error_message()) }
+  { size: native_stat_size(), mode: native_stat_mode() }
 }
 
 ///|
@@ -126,8 +114,10 @@ pub fn test_write_file(
 }
 
 ///|
-pub fn test_remove_tree(path : String) -> Unit {
-  ignore(native_test_remove_tree(path_to_bytes(path)))
+pub fn test_remove_tree(path : String) -> Unit raise ReaddirpError {
+  guard native_test_remove_tree(path_to_bytes(path)) == 0 else {
+    raise ReaddirpError(last_error_message())
+  }
 }
 
 ///|
