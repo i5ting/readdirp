@@ -1,0 +1,7 @@
+// import {
+//   "username/readdirp" @lib,
+// }
+
+options(
+  "is-main": true,
+)

@@ -1,0 +1,17 @@
+{
+  "extends": "@paulmillr/jsbt/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": ".",
+    "module": "es2020",
+    "moduleResolution": "bundler",
+    "sourceMap": false,
+    "declarationMap": false
+  },
+  "include": [
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
