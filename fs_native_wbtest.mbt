@@ -63,6 +63,7 @@ test "native read_dir_all preserves unicode filenames" {
 test "errno maps to warning kinds" {
   assert_true(warning_kind_from_errno(2) == Missing)
   assert_true(warning_kind_from_errno(13) == PermissionDenied)
-  assert_true(warning_kind_from_errno(40) == TooManySymlinks)
+  assert_true(warning_kind_from_errno(errno_eperm()) == PermissionDenied)
+  assert_true(warning_kind_from_errno(errno_eloop()) == TooManySymlinks)
   assert_true(warning_kind_from_errno(9999) == Other)
 }

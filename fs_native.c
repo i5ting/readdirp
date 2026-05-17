@@ -90,6 +90,14 @@ MOONBIT_FFI_EXPORT int readdirp_last_errno_value(void) {
   return readdirp_last_errno;
 }
 
+MOONBIT_FFI_EXPORT int readdirp_errno_enoent(void) { return ENOENT; }
+
+MOONBIT_FFI_EXPORT int readdirp_errno_eacces(void) { return EACCES; }
+
+MOONBIT_FFI_EXPORT int readdirp_errno_eperm(void) { return EPERM; }
+
+MOONBIT_FFI_EXPORT int readdirp_errno_eloop(void) { return ELOOP; }
+
 MOONBIT_FFI_EXPORT int readdirp_names_is_null(void *names) {
   return names == NULL;
 }

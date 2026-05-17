@@ -43,6 +43,18 @@ extern "C" fn native_last_error_message() -> Bytes = "readdirp_last_error_messag
 extern "C" fn native_last_errno() -> Int = "readdirp_last_errno_value"
 
 ///|
+extern "C" fn native_errno_enoent() -> Int = "readdirp_errno_enoent"
+
+///|
+extern "C" fn native_errno_eacces() -> Int = "readdirp_errno_eacces"
+
+///|
+extern "C" fn native_errno_eperm() -> Int = "readdirp_errno_eperm"
+
+///|
+extern "C" fn native_errno_eloop() -> Int = "readdirp_errno_eloop"
+
+///|
 fn last_error_message() -> String {
   bytes_to_string(native_last_error_message())
 }
@@ -53,12 +65,32 @@ fn last_errno() -> Int {
 }
 
 ///|
+fn errno_enoent() -> Int {
+  native_errno_enoent()
+}
+
+///|
+fn errno_eacces() -> Int {
+  native_errno_eacces()
+}
+
+///|
+fn errno_eperm() -> Int {
+  native_errno_eperm()
+}
+
+///|
+fn errno_eloop() -> Int {
+  native_errno_eloop()
+}
+
+///|
 fn warning_kind_from_errno(errno : Int) -> WarningKind {
-  if errno == 2 {
+  if errno == errno_enoent() {
     Missing
-  } else if errno == 13 {
+  } else if errno == errno_eacces() || errno == errno_eperm() {
     PermissionDenied
-  } else if errno == 40 {
+  } else if errno == errno_eloop() {
     TooManySymlinks
   } else {
     Other
