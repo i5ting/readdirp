@@ -48,17 +48,27 @@ test "entry type controls emitted entries" {
   let directory_paths = directories.map(entry => entry.path)
   directory_paths.sort()
   inspect(directory_paths, content="[\"d\"]")
+  test_write_file(join_path(root, "target.txt"), "target")
+  test_symlink("target.txt", join_path(root, "link.txt"))
   let files_and_directories = readdirp(root, options={
     ..Options::default(),
     type_: FilesAndDirectories,
+    lstat: true,
   })
   let file_and_directory_paths = files_and_directories.map(entry => entry.path)
   file_and_directory_paths.sort()
-  inspect(file_and_directory_paths, content="[\"d\", \"a.txt\"]")
-  let all = readdirp(root, options={ ..Options::default(), type_: All })
+  inspect(
+    file_and_directory_paths,
+    content="[\"d\", \"a.txt\", \"target.txt\"]",
+  )
+  let all = readdirp(root, options={
+    ..Options::default(),
+    type_: All,
+    lstat: true,
+  })
   let all_paths = all.map(entry => entry.path)
   all_paths.sort()
-  inspect(all_paths, content="[\"d\", \"a.txt\"]")
+  inspect(all_paths, content="[\"d\", \"a.txt\", \"link.txt\", \"target.txt\"]")
   test_remove_tree(root)
 }
 
