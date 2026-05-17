@@ -27,25 +27,121 @@ extern "C" fn native_last_error_message() -> Bytes = "readdirp_last_error_messag
 
 ///|
 fn last_error_message() -> String {
-  ascii_bytes_to_string(native_last_error_message())
+  bytes_to_string(native_last_error_message())
 }
 
 ///|
 fn path_to_bytes(path : String) -> Bytes {
-  ascii_string_to_bytes(path)
+  string_to_utf8_bytes(path)
 }
 
 ///|
-fn ascii_string_to_bytes(value : String) -> Bytes {
-  Bytes::makei(value.length(), i => value.unsafe_get(i).to_byte())
+fn bytes_to_string(value : Bytes) -> String {
+  utf8_decode_lossy(value)
 }
 
 ///|
-fn ascii_bytes_to_string(value : Bytes) -> String {
-  String::from_array(
-    Array::makei(value.length(), i => {
-      value.unsafe_get(i).to_int().unsafe_to_char()
-    }),
+fn string_to_utf8_bytes(value : String) -> Bytes {
+  let byte_length = value
+    .iter()
+    .fold(init=0, (length, char) => {
+      let code = char.to_int()
+      if code < 0x80 {
+        length + 1
+      } else if code < 0x800 {
+        length + 2
+      } else if code < 0x10000 {
+        length + 3
+      } else {
+        length + 4
+      }
+    })
+  let bytes = FixedArray::make(byte_length, b'\x00')
+  ignore(
+    value
+    .iter()
+    .fold(init=0, (offset, char) => offset + bytes.set_utf8_char(offset, char)),
+  )
+  fixed_byte_array_to_bytes(bytes)
+}
+
+///|
+fn fixed_byte_array_to_bytes(bytes : FixedArray[Byte]) -> Bytes = "%identity"
+
+///|
+fn utf8_decode_lossy(value : Bytes) -> String {
+  let chars : Array[Char] = []
+  let length = value.length()
+  for i = 0; i < length; {
+    let b0 = value.unsafe_get(i).to_int()
+    if b0 <= 0x7F {
+      chars.push(b0.unsafe_to_char())
+      continue i + 1
+    } else if b0 >= 0xC2 &&
+      b0 <= 0xDF &&
+      i + 1 < length &&
+      is_utf8_continuation(value.unsafe_get(i + 1).to_int()) {
+      let b1 = value.unsafe_get(i + 1).to_int()
+      let code = ((b0 & 0x1F) << 6) | (b1 & 0x3F)
+      chars.push(code.unsafe_to_char())
+      continue i + 2
+    } else if is_valid_utf8_three_byte(value, i, length) {
+      let b1 = value.unsafe_get(i + 1).to_int()
+      let b2 = value.unsafe_get(i + 2).to_int()
+      let code = ((b0 & 0x0F) << 12) | ((b1 & 0x3F) << 6) | (b2 & 0x3F)
+      chars.push(code.unsafe_to_char())
+      continue i + 3
+    } else if is_valid_utf8_four_byte(value, i, length) {
+      let b1 = value.unsafe_get(i + 1).to_int()
+      let b2 = value.unsafe_get(i + 2).to_int()
+      let b3 = value.unsafe_get(i + 3).to_int()
+      let code = ((b0 & 0x07) << 18) |
+        ((b1 & 0x3F) << 12) |
+        ((b2 & 0x3F) << 6) |
+        (b3 & 0x3F)
+      chars.push(code.unsafe_to_char())
+      continue i + 4
+    } else {
+      chars.push((0xFFFD).unsafe_to_char())
+      continue i + 1
+    }
+  }
+  String::from_array(chars)
+}
+
+///|
+fn is_utf8_continuation(byte : Int) -> Bool {
+  byte >= 0x80 && byte <= 0xBF
+}
+
+///|
+fn is_valid_utf8_three_byte(value : Bytes, index : Int, length : Int) -> Bool {
+  guard index + 2 < length else { false }
+  let b0 = value.unsafe_get(index).to_int()
+  let b1 = value.unsafe_get(index + 1).to_int()
+  let b2 = value.unsafe_get(index + 2).to_int()
+  is_utf8_continuation(b2) &&
+  (
+    (b0 == 0xE0 && b1 >= 0xA0 && b1 <= 0xBF) ||
+    (b0 >= 0xE1 && b0 <= 0xEC && is_utf8_continuation(b1)) ||
+    (b0 == 0xED && b1 >= 0x80 && b1 <= 0x9F) ||
+    (b0 >= 0xEE && b0 <= 0xEF && is_utf8_continuation(b1))
+  )
+}
+
+///|
+fn is_valid_utf8_four_byte(value : Bytes, index : Int, length : Int) -> Bool {
+  guard index + 3 < length else { false }
+  let b0 = value.unsafe_get(index).to_int()
+  let b1 = value.unsafe_get(index + 1).to_int()
+  let b2 = value.unsafe_get(index + 2).to_int()
+  let b3 = value.unsafe_get(index + 3).to_int()
+  is_utf8_continuation(b2) &&
+  is_utf8_continuation(b3) &&
+  (
+    (b0 == 0xF0 && b1 >= 0x90 && b1 <= 0xBF) ||
+    (b0 >= 0xF1 && b0 <= 0xF3 && is_utf8_continuation(b1)) ||
+    (b0 == 0xF4 && b1 >= 0x80 && b1 <= 0x8F)
   )
 }
 
@@ -57,7 +153,7 @@ fn read_dir_all(path : String) -> Array[String] raise ReaddirpError {
     raise ReaddirpError(last_error_message())
   }
   Array::from_fixed_array(native_names_to_fixed_array(names)).map(name => {
-    ascii_bytes_to_string(name)
+    bytes_to_string(name)
   })
 }
 
@@ -126,7 +222,7 @@ fn test_write_file(
 ) -> Unit raise ReaddirpError {
   guard native_test_write_file(
       path_to_bytes(path),
-      ascii_string_to_bytes(contents),
+      string_to_utf8_bytes(contents),
     ) ==
     0 else {
     raise ReaddirpError(last_error_message())

@@ -46,3 +46,15 @@ test "native test_remove_tree rejects traversal paths" {
   }
   assert_true(raised)
 }
+
+///|
+test "native read_dir_all preserves unicode filenames" {
+  let root = "./_build/readdirp-ffi-unicode"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "你好.txt"), "你好")
+  let names = read_dir_all(root)
+  names.sort()
+  inspect(names, content="[\"你好.txt\"]")
+  test_remove_tree(root)
+}
