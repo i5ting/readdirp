@@ -3,5 +3,7 @@ options(
   targets: {
     "fs_native.mbt": [ "native", "llvm" ],
     "fs_native_wbtest.mbt": [ "native", "llvm" ],
+    "walker.mbt": [ "native", "llvm" ],
+    "walker_wbtest.mbt": [ "native", "llvm" ],
   },
 )
