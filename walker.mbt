@@ -41,9 +41,36 @@ fn add_warning(
 }
 
 ///|
+fn add_recursive_symlink_warning(
+  warnings : Array[ReaddirpWarning],
+  path : String,
+  target : String,
+) -> Unit {
+  warnings.push(
+    warning_for(path, RecursiveSymlink, "recursive symlink skipped: " + target),
+  )
+}
+
+///|
+fn dir_is_symlink(path : String) -> Bool raise ReaddirpError {
+  file_kind_from_mode(stat_path(path, follow_symlink=false).mode) == Symlink
+}
+
+///|
+fn child_ancestors(
+  ancestors : Array[String],
+  child_real_path : String,
+) -> Array[String] {
+  let next = ancestors.copy()
+  next.push(child_real_path)
+  next
+}
+
+///|
 fn walk_dir(
   root : String,
   dir : String,
+  ancestors : Array[String],
   current_depth : Int,
   options : Options,
   entries : Array[EntryInfo],
@@ -66,16 +93,22 @@ fn walk_dir(
             entries.push(entry)
           }
           if current_depth < options.depth {
-            walk_dir(
-              root,
-              full_path,
-              current_depth + 1,
-              options,
-              entries,
-              warnings,
-            ) catch {
-              ReaddirpError(message) =>
-                add_warning(warnings, full_path, message)
+            let real_child = real_path(full_path)
+            if dir_is_symlink(full_path) && ancestors.contains(real_child) {
+              add_recursive_symlink_warning(warnings, full_path, real_child)
+            } else {
+              walk_dir(
+                root,
+                full_path,
+                child_ancestors(ancestors, real_child),
+                current_depth + 1,
+                options,
+                entries,
+                warnings,
+              ) catch {
+                ReaddirpError(message) =>
+                  add_warning(warnings, full_path, message)
+              }
             }
           }
         }
@@ -106,7 +139,15 @@ pub fn readdirp_report(
   }
   let entries = []
   let warnings = []
-  walk_dir(absolute_root, absolute_root, 0, options, entries, warnings)
+  walk_dir(
+    absolute_root,
+    absolute_root,
+    [absolute_root],
+    0,
+    options,
+    entries,
+    warnings,
+  )
   { entries, warnings }
 }
 

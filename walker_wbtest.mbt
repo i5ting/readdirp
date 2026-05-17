@@ -49,6 +49,63 @@ test "readdirp_report records missing child warnings and continues" {
 }
 
 ///|
+test "symlink to file follows stat by default and lstat preserves symlink" {
+  let root = "./_build/readdirp-symlink-file"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "target.txt"), "target")
+  test_symlink("target.txt", join_path(root, "link.txt"))
+  let entries = readdirp(root)
+  let links = entries.filter(entry => entry.path == "link.txt")
+  inspect(links.length(), content="1")
+  assert_true(links[0].kind == File)
+  let lstat_entries = readdirp(root, options={
+    ..Options::default(),
+    lstat: true,
+    type_: All,
+  })
+  let lstat_links = lstat_entries.filter(entry => entry.path == "link.txt")
+  inspect(lstat_links.length(), content="1")
+  assert_true(lstat_links[0].kind == Symlink)
+  test_remove_tree(root)
+}
+
+///|
+test "symlink to directory traverses by default" {
+  let root = "./_build/readdirp-symlink-dir"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_create_dir(join_path(root, "real"))
+  test_write_file(join_path(root, "real/a.txt"), "a")
+  test_symlink("real", join_path(root, "linked"))
+  let entries = readdirp(root)
+  let paths = entries.map(entry => entry.path)
+  inspect(paths.length(), content="2")
+  assert_true(paths.search("linked/a.txt") != None)
+  assert_true(paths.search("real/a.txt") != None)
+  test_remove_tree(root)
+}
+
+///|
+test "recursive directory symlink is skipped with warning" {
+  let root = "./_build/readdirp-symlink-loop"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_create_dir(join_path(root, "real"))
+  test_write_file(join_path(root, "real/a.txt"), "a")
+  test_symlink("..", join_path(root, "real/loop"))
+  let report = readdirp_report(root, options={ ..Options::default(), depth: 8 })
+  let paths = report.entries.map(entry => entry.path)
+  paths.sort()
+  inspect(paths, content="[\"real/a.txt\"]")
+  inspect(report.warnings.length(), content="1")
+  let warning = report.warnings[0]
+  assert_true(warning.kind == RecursiveSymlink)
+  assert_true(warning.path.has_suffix("/real/loop"))
+  test_remove_tree(root)
+}
+
+///|
 test "default output skips sibling directories but traverses them" {
   let root = "./_build/readdirp-default"
   test_remove_tree(root)
