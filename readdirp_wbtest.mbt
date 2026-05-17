@@ -23,4 +23,8 @@ test "relative_path strips normalized root prefix" {
     relative_path("/tmp/readdirp/", "/tmp/readdirp/a.txt"),
     content="a.txt",
   )
+  inspect(
+    relative_path("/tmp/readdirp", "/tmp/readdirp-other/a.txt"),
+    content="/tmp/readdirp-other/a.txt",
+  )
 }
