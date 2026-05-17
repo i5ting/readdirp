@@ -1,9 +1,11 @@
 {
   "name": "i5ting/readdirp",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "readme": "README.mbt.md",
   "repository": "https://github.com/i5ting/readdirp",
   "license": "Apache-2.0",
-  "keywords": [],
-  "description": ""
+  "keywords": ["dir", "readdir", "readdirp"],
+  "description": "Directory walking for MoonBit native/LLVM targets.",
+  "preferred-target": "native",
+  "exclude": ["readdirp-master"]
 }
