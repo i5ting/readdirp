@@ -120,22 +120,22 @@ test "file filters and basename helpers select files" {
     file_filter: entry => entry.basename.has_suffix(".js"),
   })
   let js_paths = js_entries.map(entry => entry.path)
-  js_paths.sort_by(compare_test_path)
+  js_paths.sort()
   inspect(js_paths, content="[\"a.js\", \"c.js\"]")
   let a_entries = readdirp(root, options={
     ..Options::default(),
     file_filter: basename_filter(" a.js "),
   })
   let a_paths = a_entries.map(entry => entry.path)
-  a_paths.sort_by(compare_test_path)
+  a_paths.sort()
   inspect(a_paths, content="[\"a.js\"]")
   let any_entries = readdirp(root, options={
     ..Options::default(),
     file_filter: basename_filter_any([" b.txt ", " c.js "]),
   })
   let any_paths = any_entries.map(entry => entry.path)
-  any_paths.sort_by(compare_test_path)
-  inspect(any_paths, content="[\"b.txt\", \"c.js\"]")
+  any_paths.sort()
+  inspect(any_paths, content="[\"c.js\", \"b.txt\"]")
   test_remove_tree(root)
 }
 
@@ -153,7 +153,7 @@ test "directory filter prevents recursion" {
     directory_filter: entry => entry.basename != "skip",
   })
   let paths = entries.map(entry => entry.path)
-  paths.sort_by(compare_test_path)
+  paths.sort()
   inspect(paths, content="[\"keep/a.txt\"]")
   test_remove_tree(root)
 }
@@ -178,35 +178,4 @@ test "dotfiles are included and always_stat exposes size" {
     None => fail("expected stats")
   }
   test_remove_tree(root)
-}
-
-///|
-fn compare_test_path(left : String, right : String) -> Int {
-  let left_chars = left.to_array()
-  let right_chars = right.to_array()
-  compare_test_chars(
-    left_chars,
-    right_chars,
-    0,
-    left_chars.length().min(right_chars.length()),
-  )
-}
-
-///|
-fn compare_test_chars(
-  left : Array[Char],
-  right : Array[Char],
-  index : Int,
-  limit : Int,
-) -> Int {
-  if index >= limit {
-    left.length() - right.length()
-  } else {
-    let diff = left[index].to_int() - right[index].to_int()
-    if diff != 0 {
-      diff
-    } else {
-      compare_test_chars(left, right, index + 1, limit)
-    }
-  }
 }
