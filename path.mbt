@@ -29,6 +29,8 @@ fn join_path(parent : String, child : String) -> String {
   let child = trim_leading_slashes(child)
   if parent == "" {
     child
+  } else if parent == "/" {
+    parent + child
   } else if child == "" {
     parent
   } else {

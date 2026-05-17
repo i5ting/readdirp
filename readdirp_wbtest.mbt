@@ -2,6 +2,7 @@
 test "join_path avoids duplicate separators" {
   inspect(join_path("/tmp/readdirp", "a.txt"), content="/tmp/readdirp/a.txt")
   inspect(join_path("/tmp/readdirp/", "a.txt"), content="/tmp/readdirp/a.txt")
+  inspect(join_path("/", "a.txt"), content="/a.txt")
   inspect(join_path("", "a.txt"), content="a.txt")
 }
 
