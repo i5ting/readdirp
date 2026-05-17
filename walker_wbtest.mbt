@@ -11,6 +11,7 @@ test "readdirp reads files from a directory" {
   names.sort()
   inspect(names, content="[\"a.txt\", \"b.txt\", \"c.txt\"]")
   assert_true(entries.all(entry => entry.stats == None))
+  assert_true(entries.all(entry => entry.full_path.has_prefix("/")))
   test_remove_tree(root)
 }
 

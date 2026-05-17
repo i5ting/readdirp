@@ -174,6 +174,25 @@ readdirp_stat_path(moonbit_bytes_t path, int follow_symlink) {
   return 0;
 }
 
+MOONBIT_FFI_EXPORT moonbit_bytes_t readdirp_real_path(moonbit_bytes_t path) {
+  char *path_text = readdirp_cstring_from_bytes(path);
+  if (path_text == NULL) {
+    return NULL;
+  }
+
+  char resolved[PATH_MAX];
+  char *status = realpath(path_text, resolved);
+  int err = errno;
+  free(path_text);
+  if (status == NULL) {
+    readdirp_set_errno(err);
+    return NULL;
+  }
+
+  readdirp_set_errno(0);
+  return readdirp_bytes_from_cstr(resolved);
+}
+
 MOONBIT_FFI_EXPORT int64_t readdirp_stat_size(void) {
   return readdirp_last_stat_size;
 }

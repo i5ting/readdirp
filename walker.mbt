@@ -80,13 +80,14 @@ pub fn readdirp_report(
     raise ReaddirpError("depth must be non-negative")
   }
   let normalized_root = normalize_path(root)
-  let root_stats = stat_path(normalized_root, follow_symlink=true)
+  let absolute_root = real_path(normalized_root)
+  let root_stats = stat_path(absolute_root, follow_symlink=true)
   guard file_kind_from_mode(root_stats.mode) == Directory else {
     raise ReaddirpError("root must be a directory")
   }
   let entries = []
   let warnings = []
-  walk_dir(normalized_root, normalized_root, 0, options, entries, warnings)
+  walk_dir(absolute_root, absolute_root, 0, options, entries, warnings)
   { entries, warnings }
 }
 

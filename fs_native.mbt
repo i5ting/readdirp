@@ -3,6 +3,9 @@
 priv type NativeNames
 
 ///|
+priv type NativePath
+
+///|
 #borrow(path)
 extern "C" fn native_read_dir_all(path : Bytes) -> NativeNames = "readdirp_read_dir_all"
 
@@ -15,6 +18,17 @@ fn native_names_to_fixed_array(names : NativeNames) -> FixedArray[Bytes] = "%ide
 ///|
 #borrow(path)
 extern "C" fn native_stat_path(path : Bytes, follow_symlink : Int) -> Int = "readdirp_stat_path"
+
+///|
+#borrow(path)
+extern "C" fn native_real_path(path : Bytes) -> NativePath = "readdirp_real_path"
+
+///|
+#borrow(path)
+extern "C" fn native_path_is_null(path : NativePath) -> Int = "readdirp_names_is_null"
+
+///|
+fn native_path_to_bytes(path : NativePath) -> Bytes = "%identity"
 
 ///|
 extern "C" fn native_stat_size() -> Int64 = "readdirp_stat_size"
@@ -173,6 +187,16 @@ fn stat_path(
   )
   guard stat == 0 else { raise ReaddirpError(last_error_message()) }
   { size: native_stat_size(), mode: native_stat_mode() }
+}
+
+///|
+#warnings("-unused_value")
+fn real_path(path : String) -> String raise ReaddirpError {
+  let resolved = native_real_path(path_to_bytes(path))
+  guard native_path_is_null(resolved) == 0 else {
+    raise ReaddirpError(last_error_message())
+  }
+  bytes_to_string(native_path_to_bytes(resolved))
 }
 
 ///|
