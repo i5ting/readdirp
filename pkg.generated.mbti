@@ -1,0 +1,78 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "i5ting/readdirp"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn basename_filter(String) -> (EntryInfo) -> Bool
+
+pub fn basename_filter_any(Array[String]) -> (EntryInfo) -> Bool
+
+// Errors
+pub(all) suberror ReaddirpError {
+  ReaddirpError(String)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) struct EntryInfo {
+  path : String
+  full_path : String
+  basename : String
+  kind : FileKind
+  stats : FileStats?
+} derive(Eq, @debug.Debug)
+
+pub(all) enum EntryType {
+  Files
+  Directories
+  FilesAndDirectories
+  All
+} derive(Eq, @debug.Debug)
+
+pub(all) enum FileKind {
+  File
+  Directory
+  Symlink
+  Other
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FileStats {
+  size : Int64
+  mode : Int
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Options {
+  file_filter : (EntryInfo) -> Bool
+  directory_filter : (EntryInfo) -> Bool
+  type_ : EntryType
+  lstat : Bool
+  always_stat : Bool
+  depth : Int
+}
+pub fn Options::default() -> Self
+
+pub(all) struct ReaddirpReport {
+  entries : Array[EntryInfo]
+  warnings : Array[ReaddirpWarning]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ReaddirpWarning {
+  path : String
+  kind : WarningKind
+  message : String
+} derive(Eq, @debug.Debug)
+
+pub(all) enum WarningKind {
+  Missing
+  PermissionDenied
+  TooManySymlinks
+  RecursiveSymlink
+  Other
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+
