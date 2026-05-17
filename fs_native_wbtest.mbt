@@ -35,3 +35,14 @@ test "native test_remove_tree rejects unsafe paths" {
   }
   assert_true(raised)
 }
+
+///|
+test "native test_remove_tree rejects traversal paths" {
+  let raised = try {
+    test_remove_tree("./_build/readdirp-/../../should-not-delete")
+    false
+  } catch {
+    _ => true
+  }
+  assert_true(raised)
+}

@@ -279,9 +279,26 @@ static int readdirp_remove_tree_path(const char *path) {
 }
 
 static int readdirp_is_safe_test_tree_path(const char *path) {
-  return strncmp(path, "./_build/readdirp-", strlen("./_build/readdirp-")) ==
-             0 ||
-         strstr(path, "/_build/readdirp-") != NULL;
+  if (path[0] == '/') {
+    return 0;
+  }
+
+  const char *segment = path;
+  while (*segment != '\0') {
+    size_t len = strcspn(segment, "/");
+    if (len == 2 && segment[0] == '.' && segment[1] == '.') {
+      return 0;
+    }
+    segment += len;
+    if (*segment == '/') {
+      segment += 1;
+    }
+  }
+
+  const char *dot_prefix = "./_build/readdirp-";
+  const char *plain_prefix = "_build/readdirp-";
+  return strncmp(path, dot_prefix, strlen(dot_prefix)) == 0 ||
+         strncmp(path, plain_prefix, strlen(plain_prefix)) == 0;
 }
 
 MOONBIT_FFI_EXPORT int readdirp_test_remove_tree(moonbit_bytes_t path) {

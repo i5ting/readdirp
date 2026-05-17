@@ -27,12 +27,26 @@ extern "C" fn native_last_error_message() -> Bytes = "readdirp_last_error_messag
 
 ///|
 fn last_error_message() -> String {
-  @utf8.decode_lossy(native_last_error_message())
+  ascii_bytes_to_string(native_last_error_message())
 }
 
 ///|
 fn path_to_bytes(path : String) -> Bytes {
-  @utf8.encode(path)
+  ascii_string_to_bytes(path)
+}
+
+///|
+fn ascii_string_to_bytes(value : String) -> Bytes {
+  Bytes::makei(value.length(), i => value.unsafe_get(i).to_byte())
+}
+
+///|
+fn ascii_bytes_to_string(value : Bytes) -> String {
+  String::from_array(
+    Array::makei(value.length(), i => {
+      value.unsafe_get(i).to_int().unsafe_to_char()
+    }),
+  )
 }
 
 ///|
@@ -43,7 +57,7 @@ fn read_dir_all(path : String) -> Array[String] raise ReaddirpError {
     raise ReaddirpError(last_error_message())
   }
   Array::from_fixed_array(native_names_to_fixed_array(names)).map(name => {
-    @utf8.decode_lossy(name)
+    ascii_bytes_to_string(name)
   })
 }
 
@@ -97,31 +111,39 @@ extern "C" fn native_test_remove_tree(path : Bytes) -> Int = "readdirp_test_remo
 extern "C" fn native_test_symlink(target : Bytes, link_path : Bytes) -> Int = "readdirp_test_symlink"
 
 ///|
-pub fn test_create_dir(path : String) -> Unit raise ReaddirpError {
+#warnings("-unused_value")
+fn test_create_dir(path : String) -> Unit raise ReaddirpError {
   guard native_test_create_dir(path_to_bytes(path)) == 0 else {
     raise ReaddirpError(last_error_message())
   }
 }
 
 ///|
-pub fn test_write_file(
+#warnings("-unused_value")
+fn test_write_file(
   path : String,
   contents : String,
 ) -> Unit raise ReaddirpError {
-  guard native_test_write_file(path_to_bytes(path), @utf8.encode(contents)) == 0 else {
+  guard native_test_write_file(
+      path_to_bytes(path),
+      ascii_string_to_bytes(contents),
+    ) ==
+    0 else {
     raise ReaddirpError(last_error_message())
   }
 }
 
 ///|
-pub fn test_remove_tree(path : String) -> Unit raise ReaddirpError {
+#warnings("-unused_value")
+fn test_remove_tree(path : String) -> Unit raise ReaddirpError {
   guard native_test_remove_tree(path_to_bytes(path)) == 0 else {
     raise ReaddirpError(last_error_message())
   }
 }
 
 ///|
-pub fn test_symlink(
+#warnings("-unused_value")
+fn test_symlink(
   target : String,
   link_path : String,
 ) -> Unit raise ReaddirpError {
