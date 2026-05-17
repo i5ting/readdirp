@@ -106,3 +106,107 @@ test "depth limits recursion" {
   )
   test_remove_tree(root)
 }
+
+///|
+test "file filters and basename helpers select files" {
+  let root = "./_build/readdirp-filters"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "a.js"), "a")
+  test_write_file(join_path(root, "b.txt"), "b")
+  test_write_file(join_path(root, "c.js"), "c")
+  let js_entries = readdirp(root, options={
+    ..Options::default(),
+    file_filter: entry => entry.basename.has_suffix(".js"),
+  })
+  let js_paths = js_entries.map(entry => entry.path)
+  js_paths.sort_by(compare_test_path)
+  inspect(js_paths, content="[\"a.js\", \"c.js\"]")
+  let a_entries = readdirp(root, options={
+    ..Options::default(),
+    file_filter: basename_filter(" a.js "),
+  })
+  let a_paths = a_entries.map(entry => entry.path)
+  a_paths.sort_by(compare_test_path)
+  inspect(a_paths, content="[\"a.js\"]")
+  let any_entries = readdirp(root, options={
+    ..Options::default(),
+    file_filter: basename_filter_any([" b.txt ", " c.js "]),
+  })
+  let any_paths = any_entries.map(entry => entry.path)
+  any_paths.sort_by(compare_test_path)
+  inspect(any_paths, content="[\"b.txt\", \"c.js\"]")
+  test_remove_tree(root)
+}
+
+///|
+test "directory filter prevents recursion" {
+  let root = "./_build/readdirp-dir-filter"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_create_dir(join_path(root, "keep"))
+  test_create_dir(join_path(root, "skip"))
+  test_write_file(join_path(root, "keep/a.txt"), "a")
+  test_write_file(join_path(root, "skip/b.txt"), "b")
+  let entries = readdirp(root, options={
+    ..Options::default(),
+    directory_filter: entry => entry.basename != "skip",
+  })
+  let paths = entries.map(entry => entry.path)
+  paths.sort_by(compare_test_path)
+  inspect(paths, content="[\"keep/a.txt\"]")
+  test_remove_tree(root)
+}
+
+///|
+test "dotfiles are included and always_stat exposes size" {
+  let root = "./_build/readdirp-dot-stats"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, ".hidden"), "abc")
+  let default_entries = readdirp(root)
+  inspect(default_entries.length(), content="1")
+  assert_true(default_entries[0].stats == None)
+  let entries = readdirp(root, options={
+    ..Options::default(),
+    always_stat: true,
+  })
+  inspect(entries.length(), content="1")
+  inspect(entries[0].basename, content=".hidden")
+  match entries[0].stats {
+    Some(stats) => inspect(stats.size, content="3")
+    None => fail("expected stats")
+  }
+  test_remove_tree(root)
+}
+
+///|
+fn compare_test_path(left : String, right : String) -> Int {
+  let left_chars = left.to_array()
+  let right_chars = right.to_array()
+  compare_test_chars(
+    left_chars,
+    right_chars,
+    0,
+    left_chars.length().min(right_chars.length()),
+  )
+}
+
+///|
+fn compare_test_chars(
+  left : Array[Char],
+  right : Array[Char],
+  index : Int,
+  limit : Int,
+) -> Int {
+  if index >= limit {
+    left.length() - right.length()
+  } else {
+    let diff = left[index].to_int() - right[index].to_int()
+    if diff != 0 {
+      diff
+    } else {
+      compare_test_chars(left, right, index + 1, limit)
+    }
+  }
+}
