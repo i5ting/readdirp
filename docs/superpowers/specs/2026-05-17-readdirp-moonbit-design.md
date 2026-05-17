@@ -129,19 +129,54 @@ warnings, but omits an event channel because this API returns a plain array.
 
 ## Testing
 
-Tests will cover:
+Tests will be derived from `readdirp-master/test/index.test.js`, adapted to the
+MoonBit synchronous array API.
+
+Black-box tests will cover:
 
 - reading files from a directory
-- default files-only behavior
-- each `EntryType`
-- depth 0, 1, and default recursion
-- file filter and directory filter behavior
-- dotfiles are included
+- default files-only behavior with sibling directories present
+- `EntryType::Files`
+- `EntryType::Directories`
+- `EntryType::FilesAndDirectories`
+- `EntryType::All`
+- `depth = 0`
+- `depth = 1`
+- `depth = 2`
+- default depth recurses through all nested test fixtures
+- `file_filter` by basename suffix
+- `file_filter` by full path suffix
+- `directory_filter` excludes both emitted directories and recursion into them
+- dotfiles are included, because the native FFI must not copy
+  `moonbitlang/x/fs.read_dir`'s hidden-file filtering behavior
 - invalid root and negative depth errors
-- path helper behavior
 
-Symlink tests will be native-only and limited to platforms where symlink creation
-is reliable in the test environment.
+White-box tests will cover:
+
+- path joining without duplicate separators
+- basename extraction
+- relative path extraction from an absolute root
+- output inclusion decisions for each `EntryType` and `FileKind`
+- recoverable filesystem error classification
+
+Native-only symlink tests will cover:
+
+- symlink to a file is emitted as `File` when `lstat = false`
+- symlink to a directory is traversed when `lstat = false`
+- symlink is emitted as `Symlink` and not traversed when `lstat = true`
+- recursive directory symlink is skipped rather than recursing forever
+
+Reference tests that will not be ported directly:
+
+- stream instance checks, because this design has no stream API
+- promise API exposure checks, because `readdirp` directly returns an array
+- `alwaysStat` and stats-size filtering, because this first version exposes
+  `FileKind` but not full metadata
+- invalid string `type`, because `EntryType` is a MoonBit enum and prevents that
+  class of invalid value at compile time
+- `highWaterMark`, warning timing, and "no warning after end" tests, because
+  those are stream-specific; synchronous recoverable errors will instead be
+  tested as skipped entries
 
 ## Validation
 
