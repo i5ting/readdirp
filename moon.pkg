@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/encoding/utf8" @utf8,
+}
+
+options(
+  native_stub: [ "fs_native.c" ],
+  targets: { "fs_native.mbt": [ "native", "llvm" ] },
+)
