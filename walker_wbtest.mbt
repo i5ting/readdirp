@@ -49,6 +49,37 @@ test "readdirp_report records missing child warnings and continues" {
 }
 
 ///|
+test "invalid roots and depth raise readdirp errors" {
+  let empty_root_error = try {
+    ignore(readdirp(""))
+    ""
+  } catch {
+    ReaddirpError(message) => message
+  }
+  inspect(empty_root_error, content="root argument is required")
+  let negative_depth_error = try {
+    ignore(readdirp(".", options={ ..Options::default(), depth: -1 }))
+    ""
+  } catch {
+    ReaddirpError(message) => message
+  }
+  inspect(negative_depth_error, content="depth must be non-negative")
+  let root = "./_build/readdirp-invalid-root"
+  test_remove_tree(root)
+  test_create_dir(root)
+  let file_root = join_path(root, "file.txt")
+  test_write_file(file_root, "file")
+  let file_root_error = try {
+    ignore(readdirp(file_root))
+    ""
+  } catch {
+    ReaddirpError(message) => message
+  }
+  inspect(file_root_error, content="root must be a directory")
+  test_remove_tree(root)
+}
+
+///|
 test "symlink to file follows stat by default and lstat preserves symlink" {
   let root = "./_build/readdirp-symlink-file"
   test_remove_tree(root)
@@ -67,6 +98,29 @@ test "symlink to file follows stat by default and lstat preserves symlink" {
   let lstat_links = lstat_entries.filter(entry => entry.path == "link.txt")
   inspect(lstat_links.length(), content="1")
   assert_true(lstat_links[0].kind == Symlink)
+  test_remove_tree(root)
+}
+
+///|
+test "lstat with always_stat exposes symlink stats" {
+  let root = "./_build/readdirp-lstat-stats"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "target.txt"), "target")
+  test_symlink("target.txt", join_path(root, "link.txt"))
+  let entries = readdirp(root, options={
+    ..Options::default(),
+    always_stat: true,
+    lstat: true,
+    type_: All,
+  })
+  let links = entries.filter(entry => entry.path == "link.txt")
+  inspect(links.length(), content="1")
+  assert_true(links[0].kind == Symlink)
+  match links[0].stats {
+    Some(stats) => assert_true(file_kind_from_mode(stats.mode) == Symlink)
+    None => fail("expected symlink stats")
+  }
   test_remove_tree(root)
 }
 
@@ -226,6 +280,30 @@ test "file filters and basename helpers select files" {
   let any_paths = any_entries.map(entry => entry.path)
   any_paths.sort()
   inspect(any_paths, content="[\"c.js\", \"b.txt\"]")
+  test_remove_tree(root)
+}
+
+///|
+test "always_stat lets file filters inspect stats" {
+  let root = "./_build/readdirp-filter-stats"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "empty.txt"), "")
+  test_write_file(join_path(root, "filled.txt"), "content")
+  let entries = readdirp(root, options={
+    ..Options::default(),
+    always_stat: true,
+    file_filter: entry => {
+      match entry.stats {
+        Some(stats) => stats.size > 0
+        None => false
+      }
+    },
+  })
+  let paths = entries.map(entry => entry.path)
+  paths.sort()
+  inspect(paths, content="[\"filled.txt\"]")
+  assert_true(entries.all(entry => entry.stats != None))
   test_remove_tree(root)
 }
 

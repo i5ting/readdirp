@@ -1,8 +1,13 @@
+import {
+  "moonbitlang/core/bench",
+}
+
 options(
   native_stub: [ "fs_native.c" ],
   targets: {
     "fs_native.mbt": [ "native", "llvm" ],
     "fs_native_wbtest.mbt": [ "native", "llvm" ],
+    "readdirp_bench_wbtest.mbt": [ "native", "llvm" ],
     "readdirp_test.mbt": [ "native", "llvm" ],
     "walker.mbt": [ "native", "llvm" ],
     "walker_wbtest.mbt": [ "native", "llvm" ],
