@@ -10,6 +10,10 @@ pub fn basename_filter(String) -> (EntryInfo) -> Bool
 
 pub fn basename_filter_any(Array[String]) -> (EntryInfo) -> Bool
 
+pub fn readdirp(String, options? : Options) -> Array[EntryInfo] raise ReaddirpError
+
+pub fn readdirp_report(String, options? : Options) -> ReaddirpReport raise ReaddirpError
+
 // Errors
 pub(all) suberror ReaddirpError {
   ReaddirpError(String)
