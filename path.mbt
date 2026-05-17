@@ -63,6 +63,8 @@ fn relative_path(root : String, full_path : String) -> String {
     Some(path) =>
       if path == "" {
         ""
+      } else if root == "/" {
+        path.to_owned()
       } else if path.has_prefix("/") {
         path.trim_start(chars="/").to_owned()
       } else {
