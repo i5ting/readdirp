@@ -79,6 +79,24 @@ Warning kinds include `Missing`, `PermissionDenied`, `TooManySymlinks`,
 `RecursiveSymlink`, and `Other`. Invalid roots and invalid options raise
 `ReaddirpError`.
 
+## Examples
+
+The `examples/basic/readdirp.mbtx` script is a copyable native example. It scans
+`examples` by default, or a directory you pass as the final argument.
+
+```bash
+moon run --target native examples/basic/readdirp.mbtx -- scan
+moon run --target native examples/basic/readdirp.mbtx -- scan .
+moon run --target native examples/basic/readdirp.mbtx -- report .
+```
+
+If the script cannot resolve `i5ting/readdirp@0.1.1`, refresh the local registry
+first with `moon update`.
+
+The script uses `Options::default()` with `type_: FilesAndDirectories`,
+`always_stat: true`, and a `directory_filter` that skips `.git`, `_build`, and
+`.mooncakes`.
+
 ## Development
 
 Run the native test suite:

@@ -1,0 +1,110 @@
+///|
+import {
+  "moonbitlang/core/env" @env,
+  "i5ting/readdirp@0.1.1" @readdirp,
+}
+
+///|
+fn kind_name(kind : @readdirp.FileKind) -> String {
+  match kind {
+    File => "file"
+    Directory => "directory"
+    Symlink => "symlink"
+    Other => "other"
+  }
+}
+
+///|
+fn warning_kind_name(kind : @readdirp.WarningKind) -> String {
+  match kind {
+    Missing => "missing"
+    PermissionDenied => "permission-denied"
+    TooManySymlinks => "too-many-symlinks"
+    RecursiveSymlink => "recursive-symlink"
+    Other => "other"
+  }
+}
+
+///|
+fn root_arg(args : Array[String]) -> String {
+  if args.length() >= 3 {
+    args[2]
+  } else {
+    "examples"
+  }
+}
+
+///|
+fn command_arg(args : Array[String]) -> String {
+  if args.length() >= 2 {
+    args[1]
+  } else {
+    "scan"
+  }
+}
+
+///|
+fn default_options() -> @readdirp.Options {
+  {
+    ..@readdirp.Options::default(),
+    type_: FilesAndDirectories,
+    depth: 2,
+    always_stat: true,
+    directory_filter: entry =>
+      entry.basename != ".git" &&
+      entry.basename != ".mooncakes" &&
+      entry.basename != "_build" &&
+      entry.basename != "readdirp-master",
+  }
+}
+
+///|
+fn print_entry(entry : @readdirp.EntryInfo) -> Unit {
+  match entry.stats {
+    Some(stats) =>
+      println("\{kind_name(entry.kind)}\t\{stats.size}\t\{entry.path}")
+    None => println("\{kind_name(entry.kind)}\t-\t\{entry.path}")
+  }
+}
+
+///|
+fn print_usage() -> Unit {
+  println("Usage:")
+  println("  moon run --target native examples/basic/readdirp.mbtx -- scan [dir]")
+  println("  moon run --target native examples/basic/readdirp.mbtx -- report [dir]")
+}
+
+///|
+fn main {
+  let args = @env.args()
+  let command = command_arg(args)
+  let root = root_arg(args)
+  if command == "scan" {
+    try @readdirp.readdirp(root, options=default_options()) catch {
+      ReaddirpError(message) => println("error\t\{message}")
+    } noraise {
+      entries => {
+        for entry in entries {
+          print_entry(entry)
+        }
+      }
+    }
+  } else if command == "report" {
+    try @readdirp.readdirp_report(root, options=default_options()) catch {
+      ReaddirpError(message) => println("error\t\{message}")
+    } noraise {
+      report => {
+        for entry in report.entries {
+          print_entry(entry)
+        }
+        for warning in report.warnings {
+          println(
+            "warning\t\{warning_kind_name(warning.kind)}\t\{warning.path}: \{warning.message}",
+          )
+        }
+      }
+    }
+  } else {
+    print_usage()
+  }
+}
