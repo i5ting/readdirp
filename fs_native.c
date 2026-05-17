@@ -86,6 +86,10 @@ MOONBIT_FFI_EXPORT moonbit_bytes_t readdirp_last_error_message(void) {
   return readdirp_bytes_from_cstr(strerror(err));
 }
 
+MOONBIT_FFI_EXPORT int readdirp_last_errno_value(void) {
+  return readdirp_last_errno;
+}
+
 MOONBIT_FFI_EXPORT int readdirp_names_is_null(void *names) {
   return names == NULL;
 }

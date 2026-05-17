@@ -30,6 +30,17 @@ fn should_emit(entry : EntryInfo, type_ : EntryType) -> Bool {
 }
 
 ///|
+fn add_warning(
+  warnings : Array[ReaddirpWarning],
+  path : String,
+  message : String,
+) -> Unit {
+  warnings.push(
+    warning_for(path, warning_kind_from_errno(last_errno()), message),
+  )
+}
+
+///|
 fn walk_dir(
   root : String,
   dir : String,
@@ -41,31 +52,39 @@ fn walk_dir(
   let names = read_dir_all(dir)
   for name in names {
     let full_path = join_path(dir, name)
-    let entry = make_entry(
-      root,
-      full_path,
-      name,
-      !options.lstat,
-      options.always_stat,
-    )
-    if entry.kind == Directory {
-      if (options.directory_filter)(entry) {
-        if should_emit(entry, options.type_) {
-          entries.push(entry)
+    try {
+      let entry = make_entry(
+        root,
+        full_path,
+        name,
+        !options.lstat,
+        options.always_stat,
+      )
+      if entry.kind == Directory {
+        if (options.directory_filter)(entry) {
+          if should_emit(entry, options.type_) {
+            entries.push(entry)
+          }
+          if current_depth < options.depth {
+            walk_dir(
+              root,
+              full_path,
+              current_depth + 1,
+              options,
+              entries,
+              warnings,
+            ) catch {
+              ReaddirpError(message) =>
+                add_warning(warnings, full_path, message)
+            }
+          }
         }
-        if current_depth < options.depth {
-          walk_dir(
-            root,
-            full_path,
-            current_depth + 1,
-            options,
-            entries,
-            warnings,
-          )
-        }
+      } else if (options.file_filter)(entry) &&
+        should_emit(entry, options.type_) {
+        entries.push(entry)
       }
-    } else if (options.file_filter)(entry) && should_emit(entry, options.type_) {
-      entries.push(entry)
+    } catch {
+      ReaddirpError(message) => add_warning(warnings, full_path, message)
     }
   }
 }

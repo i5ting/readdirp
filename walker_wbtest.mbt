@@ -16,6 +16,39 @@ test "readdirp reads files from a directory" {
 }
 
 ///|
+test "readdirp_report returns entries with empty warnings for normal fixture" {
+  let root = "./_build/readdirp-report-clean"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "a.txt"), "a")
+  test_write_file(join_path(root, "b.txt"), "b")
+  let report = readdirp_report(root)
+  let names = report.entries.map(entry => entry.basename)
+  names.sort()
+  inspect(names, content="[\"a.txt\", \"b.txt\"]")
+  inspect(report.warnings.length(), content="0")
+  test_remove_tree(root)
+}
+
+///|
+test "readdirp_report records missing child warnings and continues" {
+  let root = "./_build/readdirp-warning-broken-link"
+  test_remove_tree(root)
+  test_create_dir(root)
+  test_write_file(join_path(root, "keep.txt"), "keep")
+  test_symlink("missing-target.txt", join_path(root, "broken-link"))
+  let report = readdirp_report(root)
+  let names = report.entries.map(entry => entry.basename)
+  names.sort()
+  inspect(names, content="[\"keep.txt\"]")
+  inspect(report.warnings.length(), content="1")
+  let warning = report.warnings[0]
+  assert_true(warning.kind == Missing)
+  assert_true(warning.path.has_suffix("/broken-link"))
+  test_remove_tree(root)
+}
+
+///|
 test "default output skips sibling directories but traverses them" {
   let root = "./_build/readdirp-default"
   test_remove_tree(root)

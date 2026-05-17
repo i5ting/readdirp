@@ -58,3 +58,11 @@ test "native read_dir_all preserves unicode filenames" {
   inspect(names, content="[\"你好.txt\"]")
   test_remove_tree(root)
 }
+
+///|
+test "errno maps to warning kinds" {
+  assert_true(warning_kind_from_errno(2) == Missing)
+  assert_true(warning_kind_from_errno(13) == PermissionDenied)
+  assert_true(warning_kind_from_errno(40) == TooManySymlinks)
+  assert_true(warning_kind_from_errno(9999) == Other)
+}

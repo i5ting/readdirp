@@ -40,8 +40,38 @@ extern "C" fn native_stat_mode() -> Int = "readdirp_stat_mode"
 extern "C" fn native_last_error_message() -> Bytes = "readdirp_last_error_message"
 
 ///|
+extern "C" fn native_last_errno() -> Int = "readdirp_last_errno_value"
+
+///|
 fn last_error_message() -> String {
   bytes_to_string(native_last_error_message())
+}
+
+///|
+fn last_errno() -> Int {
+  native_last_errno()
+}
+
+///|
+fn warning_kind_from_errno(errno : Int) -> WarningKind {
+  if errno == 2 {
+    Missing
+  } else if errno == 13 {
+    PermissionDenied
+  } else if errno == 40 {
+    TooManySymlinks
+  } else {
+    Other
+  }
+}
+
+///|
+fn warning_for(
+  path : String,
+  kind : WarningKind,
+  message : String,
+) -> ReaddirpWarning {
+  { path, kind, message }
 }
 
 ///|
