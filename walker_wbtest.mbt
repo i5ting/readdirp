@@ -31,34 +31,6 @@ test "default output skips sibling directories but traverses them" {
 }
 
 ///|
-fn compare_paths(left : String, right : String) -> Int {
-  let left_length = left.length()
-  let right_length = right.length()
-  let limit = if left_length < right_length {
-    left_length
-  } else {
-    right_length
-  }
-  let mut index = 0
-  let mut result = 0
-  while index < limit && result == 0 {
-    let left_unit = left[index]
-    let right_unit = right[index]
-    if left_unit < right_unit {
-      result = -1
-    } else if left_unit > right_unit {
-      result = 1
-    }
-    index = index + 1
-  }
-  if result != 0 {
-    result
-  } else {
-    left_length - right_length
-  }
-}
-
-///|
 test "entry type controls emitted entries" {
   let root = "./_build/readdirp-types"
   test_remove_tree(root)
@@ -67,26 +39,26 @@ test "entry type controls emitted entries" {
   test_write_file(join_path(root, "a.txt"), "a")
   let files = readdirp(root, options={ ..Options::default(), type_: Files })
   let file_paths = files.map(entry => entry.path)
-  file_paths.sort_by(compare_paths)
+  file_paths.sort()
   inspect(file_paths, content="[\"a.txt\"]")
   let directories = readdirp(root, options={
     ..Options::default(),
     type_: Directories,
   })
   let directory_paths = directories.map(entry => entry.path)
-  directory_paths.sort_by(compare_paths)
+  directory_paths.sort()
   inspect(directory_paths, content="[\"d\"]")
   let files_and_directories = readdirp(root, options={
     ..Options::default(),
     type_: FilesAndDirectories,
   })
   let file_and_directory_paths = files_and_directories.map(entry => entry.path)
-  file_and_directory_paths.sort_by(compare_paths)
-  inspect(file_and_directory_paths, content="[\"a.txt\", \"d\"]")
+  file_and_directory_paths.sort()
+  inspect(file_and_directory_paths, content="[\"d\", \"a.txt\"]")
   let all = readdirp(root, options={ ..Options::default(), type_: All })
   let all_paths = all.map(entry => entry.path)
-  all_paths.sort_by(compare_paths)
-  inspect(all_paths, content="[\"a.txt\", \"d\"]")
+  all_paths.sort()
+  inspect(all_paths, content="[\"d\", \"a.txt\"]")
   test_remove_tree(root)
 }
 
@@ -102,22 +74,22 @@ test "depth limits recursion" {
   test_write_file(join_path(root, "subdir/s1/f.js"), "f")
   let depth0 = readdirp(root, options={ ..Options::default(), depth: 0 })
   let depth0_paths = depth0.map(entry => entry.path)
-  depth0_paths.sort_by(compare_paths)
+  depth0_paths.sort()
   inspect(depth0_paths, content="[\"a.js\"]")
   let depth1 = readdirp(root, options={ ..Options::default(), depth: 1 })
   let depth1_paths = depth1.map(entry => entry.path)
-  depth1_paths.sort_by(compare_paths)
+  depth1_paths.sort()
   inspect(depth1_paths, content="[\"a.js\", \"subdir/d.js\"]")
   let depth2 = readdirp(root, options={ ..Options::default(), depth: 2 })
   let depth2_paths = depth2.map(entry => entry.path)
-  depth2_paths.sort_by(compare_paths)
+  depth2_paths.sort()
   inspect(
     depth2_paths,
     content="[\"a.js\", \"subdir/d.js\", \"subdir/s1/f.js\"]",
   )
   let default_depth = readdirp(root)
   let default_depth_paths = default_depth.map(entry => entry.path)
-  default_depth_paths.sort_by(compare_paths)
+  default_depth_paths.sort()
   inspect(
     default_depth_paths,
     content="[\"a.js\", \"subdir/d.js\", \"subdir/s1/f.js\"]",
